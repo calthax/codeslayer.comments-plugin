@@ -1,0 +1,547 @@
+/*
+ * Copyright (C) 2010 - Jeff Johnston
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#include "comments-dialog.h"
+#include "comments-configuration.h"
+
+static void comments_dialog_class_init  (CommentsDialogClass  *klass);
+static void comments_dialog_init        (CommentsDialog       *dialog);
+static void comments_dialog_finalize    (CommentsDialog       *dialog);
+                                          
+static void add_content_area            (CommentsDialog       *dialog);
+static void add_file_types_pane         (CommentsDialog       *dialog, 
+                                         GtkWidget            *hpaned);
+static void add_syntax_pane             (CommentsDialog       *dialog, 
+                                         GtkWidget            *hpaned);
+static void tree_add_action             (CommentsDialog       *dialog);
+static void tree_remove_action          (CommentsDialog       *dialog);
+static void tree_edited_action          (CommentsDialog       *dialog, 
+                                         gchar                *path, 
+                                         gchar                *file_types);
+static void load_configurations         (CommentsDialog       *dialog);
+static void select_row_action           (GtkTreeSelection     *selection, 
+                                         CommentsDialog       *dialog);
+static void start_entry_action          (CommentsDialog       *dialog,
+                                         GParamSpec           *spec);
+static void end_entry_action            (CommentsDialog       *dialog,
+                                         GParamSpec           *spec);
+static gint sort_compare                (GtkTreeModel         *model, 
+                                         GtkTreeIter          *a,
+                                         GtkTreeIter          *b, 
+                                         gpointer              userdata);
+
+#define COMMENTS_DIALOG_GET_PRIVATE(obj) \
+  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), COMMENTS_DIALOG_TYPE, CommentsDialogPrivate))
+
+typedef struct _CommentsDialogPrivate CommentsDialogPrivate;
+
+struct _CommentsDialogPrivate
+{
+  CodeSlayer   *codeslayer;
+  GtkWidget    *tree;
+  GtkListStore *store;
+  GList        **configurations;
+  GtkWidget    *start_entry;
+  GtkWidget    *end_entry;
+  gulong        start_entry_id;
+  gulong        end_entry_id;
+};
+
+enum
+{
+  TEXT = 0,
+  CONFIGURATION,
+  COLUMNS
+};
+
+G_DEFINE_TYPE (CommentsDialog, comments_dialog, GTK_TYPE_DIALOG)
+
+enum
+{
+  PROP_0,
+  PROP_FILE_PATHS
+};
+
+static void 
+comments_dialog_class_init (CommentsDialogClass *klass)
+{
+  G_OBJECT_CLASS (klass)->finalize = (GObjectFinalizeFunc) comments_dialog_finalize;
+  g_type_class_add_private (klass, sizeof (CommentsDialogPrivate));
+}
+
+static void
+comments_dialog_init (CommentsDialog *dialog)
+{
+  gtk_window_set_title (GTK_WINDOW (dialog), "Comments Configuration");
+  gtk_window_set_skip_taskbar_hint (GTK_WINDOW (dialog), TRUE);
+  gtk_window_set_skip_pager_hint (GTK_WINDOW (dialog), TRUE);
+  gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);
+}
+
+static void
+comments_dialog_finalize (CommentsDialog *dialog)
+{
+  G_OBJECT_CLASS (comments_dialog_parent_class)-> finalize (G_OBJECT (dialog));
+}
+
+GtkWidget*
+comments_dialog_new (CodeSlayer *codeslayer, 
+                    GList      **configurations)
+{
+  CommentsDialogPrivate *priv;
+  GtkWidget *dialog;
+  
+  dialog = g_object_new (comments_dialog_get_type (), NULL);
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+
+  priv->codeslayer = codeslayer;
+  priv->configurations = configurations;
+  
+  add_content_area (COMMENTS_DIALOG (dialog));
+  load_configurations (COMMENTS_DIALOG (dialog));
+  
+  return dialog;
+}
+
+static void
+add_content_area (CommentsDialog *dialog)
+{
+  GtkWidget *content_area;
+  GtkWidget *hpaned;
+
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), 
+                          GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                          GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
+                          
+  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  
+  hpaned = gtk_hpaned_new ();
+                          
+  gtk_container_add (GTK_CONTAINER (content_area), hpaned);
+  add_file_types_pane (dialog, hpaned);
+  add_syntax_pane (dialog, hpaned);
+  gtk_widget_show_all (content_area);
+}
+
+static void
+add_file_types_pane (CommentsDialog *dialog, 
+                     GtkWidget     *hpaned)
+{
+  CommentsDialogPrivate *priv;
+  GtkWidget *vbox;
+  GtkWidget *label;
+  GtkWidget *tree;
+  GtkListStore *store;
+  GtkTreeSortable *sortable;
+  GtkTreeViewColumn *column;
+  GtkCellRenderer *renderer;
+  GtkTreeSelection *selection;
+  GtkWidget *scrolled_window;
+  GtkWidget *hbutton;
+  GtkWidget *add_button;
+  GtkWidget *remove_button;
+  
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+
+  vbox = gtk_vbox_new (FALSE, 4);
+  label = gtk_label_new ("File Types");
+  gtk_misc_set_alignment (GTK_MISC (label), 0, .5);
+
+  /* the tree */
+
+  tree = gtk_tree_view_new ();
+  priv->tree = tree;
+  
+  store = gtk_list_store_new (COLUMNS, G_TYPE_STRING, G_TYPE_POINTER);
+  priv->store = store;
+  
+  gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (tree), FALSE);
+  gtk_tree_view_set_model (GTK_TREE_VIEW (tree), GTK_TREE_MODEL (store));
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
+  gtk_tree_selection_set_mode (selection, GTK_SELECTION_BROWSE);
+
+  sortable = GTK_TREE_SORTABLE (store);
+  gtk_tree_sortable_set_sort_func (sortable, TEXT, sort_compare,
+                                   GINT_TO_POINTER (TEXT), NULL);
+  gtk_tree_sortable_set_sort_column_id (sortable, TEXT, GTK_SORT_ASCENDING);                                   
+                           
+  column = gtk_tree_view_column_new ();
+  renderer = gtk_cell_renderer_text_new ();
+  g_object_set (renderer, "editable", TRUE, "editable-set", TRUE, NULL);
+
+  g_signal_connect_swapped (G_OBJECT (renderer), "edited",
+                            G_CALLBACK (tree_edited_action), dialog);
+  
+  gtk_tree_view_column_pack_start (column, renderer, FALSE);
+  gtk_tree_view_column_set_attributes (column, renderer, "text", TEXT, NULL);
+
+  gtk_tree_view_append_column (GTK_TREE_VIEW (tree), column);
+
+  scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
+                                  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_container_add (GTK_CONTAINER (scrolled_window), GTK_WIDGET (tree));
+  gtk_widget_set_size_request (scrolled_window, -1, 275);
+  
+  g_signal_connect (G_OBJECT (selection), "changed",
+                    G_CALLBACK (select_row_action), dialog);
+
+  /* the buttons */
+
+  hbutton = gtk_hbutton_box_new ();
+  gtk_button_box_set_layout (GTK_BUTTON_BOX (hbutton), GTK_BUTTONBOX_START);
+  
+  add_button = gtk_button_new_from_stock (GTK_STOCK_ADD);
+  remove_button = gtk_button_new_from_stock (GTK_STOCK_REMOVE);
+  
+  gtk_box_pack_start (GTK_BOX (hbutton), add_button, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (hbutton), remove_button, FALSE, FALSE, 0);
+  
+  /* pack everything in */  
+
+  gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), scrolled_window, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), hbutton, FALSE, FALSE, 0);
+  gtk_paned_add1 (GTK_PANED (hpaned), vbox);
+
+  g_signal_connect_swapped (G_OBJECT (add_button), "clicked",
+                            G_CALLBACK (tree_add_action), dialog);
+  
+  g_signal_connect_swapped (G_OBJECT (remove_button), "clicked",
+                            G_CALLBACK (tree_remove_action), dialog);
+}
+
+static void
+add_syntax_pane (CommentsDialog *dialog,
+                 GtkWidget     *hpaned)
+{
+  CommentsDialogPrivate *priv;
+  GtkWidget *vbox;
+  GtkWidget *label;
+  GtkWidget *table;
+  GtkWidget *start_label;
+  GtkWidget *start_entry;
+  GtkWidget *end_label;
+  GtkWidget *end_entry;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+
+  vbox = gtk_vbox_new (FALSE, 4);
+  label = gtk_label_new ("Syntax");
+  gtk_misc_set_alignment (GTK_MISC (label), .02, .5);
+  
+  table = gtk_table_new (2, 2, FALSE);
+  
+  /* the start entry */  
+  
+  start_label = gtk_label_new ("Start");
+  start_entry =  gtk_entry_new ();
+  priv->start_entry = start_entry;
+
+  gtk_misc_set_alignment (GTK_MISC (start_label), 1, .5);
+  gtk_table_attach (GTK_TABLE (table), start_label, 
+                    0, 1, 0, 1, GTK_FILL, GTK_SHRINK, 4, 0);
+  gtk_table_attach (GTK_TABLE (table), start_entry, 
+                    1, 2, 0, 1, GTK_FILL, GTK_SHRINK, 4, 0);
+  
+  /* the end entry */  
+  
+  end_label = gtk_label_new ("End");
+  end_entry =  gtk_entry_new ();  
+  priv->end_entry = end_entry;
+
+  gtk_misc_set_alignment (GTK_MISC (end_label), 1, .5);
+  gtk_table_attach (GTK_TABLE (table), end_label, 
+                    0, 1, 1, 2, GTK_FILL, GTK_SHRINK, 4, 0);
+  gtk_table_attach (GTK_TABLE (table), end_entry, 
+                    1, 2, 1, 2, GTK_FILL, GTK_SHRINK, 4, 0);
+  
+  gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), table, FALSE, FALSE, 0);
+  
+  gtk_paned_add2 (GTK_PANED (hpaned), vbox);
+
+  priv->start_entry_id = g_signal_connect_swapped (G_OBJECT (start_entry), "notify::text",
+                                                   G_CALLBACK (start_entry_action), dialog);
+
+  priv->end_entry_id = g_signal_connect_swapped (G_OBJECT (end_entry), "notify::text",
+                                                 G_CALLBACK (end_entry_action), dialog);
+}
+
+static void
+load_configurations (CommentsDialog *dialog)
+{
+  CommentsDialogPrivate *priv;
+  GList *list;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+
+  g_signal_handler_block (priv->start_entry, priv->start_entry_id);
+  g_signal_handler_block (priv->end_entry, priv->end_entry_id);
+
+  list = *priv->configurations;
+  while (list != NULL)
+    {
+      CommentsConfiguration *configuration = list->data;
+      const gchar *file_types;
+      
+      file_types = comments_configuration_get_file_types (configuration);
+      
+      gtk_list_store_append (priv->store, &iter);
+      gtk_list_store_set (priv->store, &iter, 
+                          TEXT, file_types, 
+                          CONFIGURATION, configuration,
+                          -1);
+
+      list = g_list_next (list);
+    }
+
+  g_signal_handler_unblock (priv->start_entry, priv->start_entry_id);
+  g_signal_handler_unblock (priv->end_entry, priv->end_entry_id);
+}
+
+static void
+tree_add_action (CommentsDialog *dialog)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeViewColumn *column;
+  GtkTreePath *child_path;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+
+  gtk_list_store_append (priv->store, &iter);
+  gtk_list_store_set (priv->store, &iter, TEXT, "", -1);
+  
+  column = gtk_tree_view_get_column (GTK_TREE_VIEW (priv->tree), 0);
+  child_path = gtk_tree_model_get_path (GTK_TREE_MODEL (priv->store), 
+                                        &iter);
+  gtk_tree_view_set_cursor (GTK_TREE_VIEW (priv->tree), child_path, 
+                            column, TRUE);
+  
+  gtk_tree_path_free (child_path);
+}
+
+static void                
+tree_remove_action (CommentsDialog *dialog)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (priv->tree));
+  if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+      CommentsConfiguration *configuration;
+    
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
+                          CONFIGURATION, &configuration, -1);
+      
+      *priv->configurations = g_list_remove (*priv->configurations, configuration);
+      g_object_unref (configuration);
+
+      gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
+    }
+}
+
+static void 
+tree_edited_action (CommentsDialog *dialog, 
+                    gchar         *path, 
+                    gchar         *file_types)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+  
+  if (!codeslayer_utils_has_text (file_types))
+    return;
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (priv->tree));
+  if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+      CommentsConfiguration *configuration;
+    
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
+                          CONFIGURATION, &configuration, -1);
+
+      if (configuration != NULL)
+        {
+          comments_configuration_set_file_types (configuration, file_types);
+          
+          gtk_list_store_set (GTK_LIST_STORE (model), &iter, 
+                              TEXT, file_types, -1);
+        }
+      else
+        {
+          configuration = comments_configuration_new ();
+
+          comments_configuration_set_file_types (configuration, file_types);
+          
+          *priv->configurations = g_list_append (*priv->configurations, configuration);
+
+          gtk_list_store_set (GTK_LIST_STORE (model), &iter, 
+                              TEXT, file_types, 
+                              CONFIGURATION, configuration, -1);
+        }
+    }
+}
+
+static void
+select_row_action (GtkTreeSelection *selection, 
+                   CommentsDialog    *dialog)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+  
+  g_signal_handler_block (priv->start_entry, priv->start_entry_id);
+  g_signal_handler_block (priv->end_entry, priv->end_entry_id);
+
+  if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+      CommentsConfiguration *configuration;
+    
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
+                          CONFIGURATION, &configuration, -1);
+             
+      if (configuration != NULL)
+        {
+          const gchar *start;             
+          const gchar *end;             
+
+          start = comments_configuration_get_start (configuration);
+          end = comments_configuration_get_end (configuration);
+                        
+          if (start)              
+            gtk_entry_set_text (GTK_ENTRY (priv->start_entry), start);
+          else
+            gtk_entry_set_text (GTK_ENTRY (priv->start_entry), "");
+
+          if (end)              
+            gtk_entry_set_text (GTK_ENTRY (priv->end_entry), end);
+          else
+            gtk_entry_set_text (GTK_ENTRY (priv->end_entry), "");
+        }
+      else
+        {
+          gtk_entry_set_text (GTK_ENTRY (priv->start_entry), "");
+          gtk_entry_set_text (GTK_ENTRY (priv->end_entry), "");
+        }                  
+    }
+
+  g_signal_handler_unblock (priv->start_entry, priv->start_entry_id);
+  g_signal_handler_unblock (priv->end_entry, priv->end_entry_id);
+}
+
+static void
+start_entry_action (CommentsDialog *dialog,
+                    GParamSpec    *spec)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (priv->tree));
+  if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+      CommentsConfiguration *configuration;
+    
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
+                          CONFIGURATION, &configuration, -1);
+      
+      if (configuration != NULL)
+        {
+          const gchar *text;
+          text = gtk_entry_get_text (GTK_ENTRY (priv->start_entry));
+          comments_configuration_set_start (configuration, text);
+        }    
+    }
+}
+
+static void
+end_entry_action (CommentsDialog *dialog,
+                  GParamSpec    *spec)
+{
+  CommentsDialogPrivate *priv;
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+
+  priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
+  
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (priv->tree));
+  if (gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+      CommentsConfiguration *configuration;
+    
+      gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
+                          CONFIGURATION, &configuration, -1);
+      
+      if (configuration != NULL)
+        {
+          const gchar *text;
+          text = gtk_entry_get_text (GTK_ENTRY (priv->end_entry));
+          comments_configuration_set_end (configuration, text);
+        }    
+    }
+}
+
+static gint
+sort_compare (GtkTreeModel *model, 
+              GtkTreeIter  *a,
+              GtkTreeIter  *b, 
+              gpointer      userdata)
+{
+  gint sortcol;
+  gint ret = 0;
+
+  sortcol = GPOINTER_TO_INT (userdata);
+  
+  switch (sortcol)
+    {
+    case TEXT:
+      {
+        gchar *text1, *text2;
+
+        gtk_tree_model_get (model, a, TEXT, &text1, -1);
+        gtk_tree_model_get (model, b, TEXT, &text2, -1);
+
+        ret = g_strcmp0 (text1, text2);
+
+        g_free (text1);
+        g_free (text2);
+      }
+      break;
+    }
+
+  return ret;
+}
