@@ -1,8 +1,0 @@
-[plugin]
-lib=libcommentscodeslayerplugin
-version=1.4.0
-name=Comments
-description=A plugin to insert comments in the editor.
-authors=Jeff Johnston <jeff.johnston.mn@gmail.com>
-copyright=Copyright © 2011 Jeff Johnston
-website=http://codeslayer.org
