@@ -90,7 +90,7 @@ comments_dialog_init (CommentsDialog *dialog)
   gtk_window_set_title (GTK_WINDOW (dialog), "Comments Configuration");
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (dialog), TRUE);
   gtk_window_set_skip_pager_hint (GTK_WINDOW (dialog), TRUE);
-  gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);
+  /*gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);*/
 }
 
 static void
