@@ -131,7 +131,7 @@ add_content_area (CommentsDialog *dialog)
                           
   content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
   
-  hpaned = gtk_hpaned_new ();
+  hpaned = gtk_paned_new (GTK_ORIENTATION_HORIZONTAL);
                           
   gtk_container_add (GTK_CONTAINER (content_area), hpaned);
   add_file_types_pane (dialog, hpaned);
@@ -159,7 +159,8 @@ add_file_types_pane (CommentsDialog *dialog,
   
   priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
 
-  vbox = gtk_vbox_new (FALSE, 4);
+  vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
+  
   label = gtk_label_new ("File Types");
   gtk_misc_set_alignment (GTK_MISC (label), 0, .5);
 
@@ -205,7 +206,7 @@ add_file_types_pane (CommentsDialog *dialog,
 
   /* the buttons */
 
-  hbutton = gtk_hbutton_box_new ();
+  hbutton = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
   gtk_button_box_set_layout (GTK_BUTTON_BOX (hbutton), GTK_BUTTONBOX_START);
   
   add_button = gtk_button_new_from_stock (GTK_STOCK_ADD);
@@ -235,7 +236,7 @@ add_syntax_pane (CommentsDialog *dialog,
   CommentsDialogPrivate *priv;
   GtkWidget *vbox;
   GtkWidget *label;
-  GtkWidget *table;
+  GtkWidget *grid;
   GtkWidget *start_label;
   GtkWidget *start_entry;
   GtkWidget *end_label;
@@ -243,11 +244,12 @@ add_syntax_pane (CommentsDialog *dialog,
 
   priv = COMMENTS_DIALOG_GET_PRIVATE (dialog);
 
-  vbox = gtk_vbox_new (FALSE, 4);
+  vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
   label = gtk_label_new ("Syntax");
   gtk_misc_set_alignment (GTK_MISC (label), .02, .5);
   
-  table = gtk_table_new (2, 2, FALSE);
+  grid = gtk_grid_new ();
+  gtk_grid_set_row_spacing (GTK_GRID (grid), 2);
   
   /* the start entry */  
   
@@ -256,10 +258,10 @@ add_syntax_pane (CommentsDialog *dialog,
   priv->start_entry = start_entry;
 
   gtk_misc_set_alignment (GTK_MISC (start_label), 1, .5);
-  gtk_table_attach (GTK_TABLE (table), start_label, 
-                    0, 1, 0, 1, GTK_FILL, GTK_SHRINK, 4, 0);
-  gtk_table_attach (GTK_TABLE (table), start_entry, 
-                    1, 2, 0, 1, GTK_FILL, GTK_SHRINK, 4, 0);
+  gtk_misc_set_padding (GTK_MISC (start_label), 4, 0);
+  gtk_grid_attach (GTK_GRID (grid), start_label, 0, 0, 1, 1);
+  gtk_grid_attach_next_to (GTK_GRID (grid), start_entry, start_label, 
+                           GTK_POS_RIGHT, 1, 1);
   
   /* the end entry */  
   
@@ -268,13 +270,13 @@ add_syntax_pane (CommentsDialog *dialog,
   priv->end_entry = end_entry;
 
   gtk_misc_set_alignment (GTK_MISC (end_label), 1, .5);
-  gtk_table_attach (GTK_TABLE (table), end_label, 
-                    0, 1, 1, 2, GTK_FILL, GTK_SHRINK, 4, 0);
-  gtk_table_attach (GTK_TABLE (table), end_entry, 
-                    1, 2, 1, 2, GTK_FILL, GTK_SHRINK, 4, 0);
+  gtk_misc_set_padding (GTK_MISC (end_label), 4, 0);
+  gtk_grid_attach (GTK_GRID (grid), end_label, 0, 1, 1, 1);
+  gtk_grid_attach_next_to (GTK_GRID (grid), end_entry, end_label, 
+                           GTK_POS_RIGHT, 1, 1);
   
   gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
-  gtk_box_pack_start (GTK_BOX (vbox), table, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox), grid, FALSE, FALSE, 0);
   
   gtk_paned_add2 (GTK_PANED (hpaned), vbox);
 
