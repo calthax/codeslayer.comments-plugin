@@ -270,11 +270,6 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-INCLUDES = \
-    $(COMMENTSCODESLAYERPLUGIN_CFLAGS) \
-    -I$(top_srcdir) \
-    -I$(srcdir)
-
 lib_LTLIBRARIES = libcommentscodeslayerplugin.la
 libcommentscodeslayerplugin_la_SOURCES = \
     comments-menu.h \
@@ -287,7 +282,7 @@ libcommentscodeslayerplugin_la_SOURCES = \
     comments-configuration.c \
     comments-plugin.c
 
-libcommentscodeslayerplugin_la_CPPFLAGS = -I$(top_srcdir)
+libcommentscodeslayerplugin_la_CPPFLAGS = $(COMMENTSCODESLAYERPLUGIN_CFLAGS) -I$(top_srcdir) -I$(srcdir)
 all: all-am
 
 .SUFFIXES:

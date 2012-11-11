@@ -1,8 +1,3 @@
-INCLUDES = \
-    $(COMMENTSCODESLAYERPLUGIN_CFLAGS) \
-    -I$(top_srcdir) \
-    -I$(srcdir)
-
 lib_LTLIBRARIES = libcommentscodeslayerplugin.la
 
 libcommentscodeslayerplugin_la_SOURCES = \
@@ -16,4 +11,4 @@ libcommentscodeslayerplugin_la_SOURCES = \
     comments-configuration.c \
     comments-plugin.c
 
-libcommentscodeslayerplugin_la_CPPFLAGS = -I$(top_srcdir)
+libcommentscodeslayerplugin_la_CPPFLAGS = $(COMMENTSCODESLAYERPLUGIN_CFLAGS) -I$(top_srcdir) -I$(srcdir)
