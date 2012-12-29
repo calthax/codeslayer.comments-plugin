@@ -41,7 +41,7 @@ static void uncomment_action                     (CommentsEngine       *engine);
 
 static CommentsConfiguration* get_configuration  (CommentsEngine       *engine);
 
-static gchar* get_configuration_file_path        (CommentsEngine       *engine);
+static gchar* get_config_file_path               (CommentsEngine       *engine);
 
 static gchar* insert_line_comment                (gchar                *selection, 
                                                   const gchar          *start);
@@ -134,7 +134,7 @@ comments_engine_load_configurations (CommentsEngine *engine)
 
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
   
-  file_path = get_configuration_file_path (engine);
+  file_path = get_config_file_path (engine);
   configurations = codeslayer_utils_get_gobjects (COMMENTS_CONFIGURATION_TYPE,
                                                   FALSE,
                                                   file_path, 
@@ -170,7 +170,7 @@ comments_engine_open_dialog (CommentsEngine *engine)
       g_list_free (priv->configurations);      
       priv->configurations = copies;
       
-      file_path = get_configuration_file_path (engine);
+      file_path = get_config_file_path (engine);
       
       g_print ("file_path %s \n", file_path);
       
@@ -193,7 +193,7 @@ comments_engine_open_dialog (CommentsEngine *engine)
 }
 
 static gchar*
-get_configuration_file_path (CommentsEngine *engine)
+get_config_file_path (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
   gchar *folder_path;
@@ -201,7 +201,7 @@ get_configuration_file_path (CommentsEngine *engine)
   
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
 
-  folder_path = codeslayer_get_configuration_folder_path (priv->codeslayer);  
+  folder_path = codeslayer_get_plugins_config_folder_path (priv->codeslayer);  
   file_path = g_build_filename (folder_path, "comments.xml", NULL);
   g_free (folder_path);
   
