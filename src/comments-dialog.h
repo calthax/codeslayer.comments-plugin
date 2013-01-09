@@ -46,8 +46,8 @@ struct _CommentsDialogClass
 
 GType comments_dialog_get_type (void) G_GNUC_CONST;
      
-GtkWidget*  comments_dialog_new (CodeSlayer *codeslayer, 
-                                 GList      **configurations);
+GtkWidget*  comments_dialog_new  (CodeSlayer *codeslayer, 
+                                  GList      **configurations);
 
 G_END_DECLS
 

@@ -97,7 +97,7 @@ am_libcommentscodeslayerplugin_la_OBJECTS =  \
 	libcommentscodeslayerplugin_la-comments-menu.lo \
 	libcommentscodeslayerplugin_la-comments-engine.lo \
 	libcommentscodeslayerplugin_la-comments-dialog.lo \
-	libcommentscodeslayerplugin_la-comments-configuration.lo \
+	libcommentscodeslayerplugin_la-comments-config.lo \
 	libcommentscodeslayerplugin_la-comments-plugin.lo
 libcommentscodeslayerplugin_la_OBJECTS =  \
 	$(am_libcommentscodeslayerplugin_la_OBJECTS)
@@ -278,8 +278,8 @@ libcommentscodeslayerplugin_la_SOURCES = \
     comments-engine.c \
     comments-dialog.h \
     comments-dialog.c \
-    comments-configuration.h \
-    comments-configuration.c \
+    comments-config.h \
+    comments-config.c \
     comments-plugin.c
 
 libcommentscodeslayerplugin_la_CPPFLAGS = $(COMMENTSCODESLAYERPLUGIN_CFLAGS) -I$(top_srcdir) -I$(srcdir)
@@ -360,7 +360,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommentscodeslayerplugin_la-comments-configuration.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommentscodeslayerplugin_la-comments-config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommentscodeslayerplugin_la-comments-dialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommentscodeslayerplugin_la-comments-engine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommentscodeslayerplugin_la-comments-menu.Plo@am__quote@
@@ -408,12 +408,12 @@ libcommentscodeslayerplugin_la-comments-dialog.lo: comments-dialog.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libcommentscodeslayerplugin_la-comments-dialog.lo `test -f 'comments-dialog.c' || echo '$(srcdir)/'`comments-dialog.c
 
-libcommentscodeslayerplugin_la-comments-configuration.lo: comments-configuration.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libcommentscodeslayerplugin_la-comments-configuration.lo -MD -MP -MF $(DEPDIR)/libcommentscodeslayerplugin_la-comments-configuration.Tpo -c -o libcommentscodeslayerplugin_la-comments-configuration.lo `test -f 'comments-configuration.c' || echo '$(srcdir)/'`comments-configuration.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcommentscodeslayerplugin_la-comments-configuration.Tpo $(DEPDIR)/libcommentscodeslayerplugin_la-comments-configuration.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='comments-configuration.c' object='libcommentscodeslayerplugin_la-comments-configuration.lo' libtool=yes @AMDEPBACKSLASH@
+libcommentscodeslayerplugin_la-comments-config.lo: comments-config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libcommentscodeslayerplugin_la-comments-config.lo -MD -MP -MF $(DEPDIR)/libcommentscodeslayerplugin_la-comments-config.Tpo -c -o libcommentscodeslayerplugin_la-comments-config.lo `test -f 'comments-config.c' || echo '$(srcdir)/'`comments-config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcommentscodeslayerplugin_la-comments-config.Tpo $(DEPDIR)/libcommentscodeslayerplugin_la-comments-config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='comments-config.c' object='libcommentscodeslayerplugin_la-comments-config.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libcommentscodeslayerplugin_la-comments-configuration.lo `test -f 'comments-configuration.c' || echo '$(srcdir)/'`comments-configuration.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libcommentscodeslayerplugin_la-comments-config.lo `test -f 'comments-config.c' || echo '$(srcdir)/'`comments-config.c
 
 libcommentscodeslayerplugin_la-comments-plugin.lo: comments-plugin.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcommentscodeslayerplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libcommentscodeslayerplugin_la-comments-plugin.lo -MD -MP -MF $(DEPDIR)/libcommentscodeslayerplugin_la-comments-plugin.Tpo -c -o libcommentscodeslayerplugin_la-comments-plugin.lo `test -f 'comments-plugin.c' || echo '$(srcdir)/'`comments-plugin.c

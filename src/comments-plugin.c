@@ -38,7 +38,7 @@ activate (CodeSlayer *codeslayer)
   menu = comments_menu_new (accel_group);
 
   engine = comments_engine_new (codeslayer, menu);
-  comments_engine_load_configurations (engine);
+  comments_engine_load_configs (engine);
   
   codeslayer_add_to_menu_bar (codeslayer, GTK_MENU_ITEM (menu));
 }

@@ -19,7 +19,7 @@
 #include <codeslayer/codeslayer-utils.h>
 #include "comments-engine.h"
 #include "comments-dialog.h"
-#include "comments-configuration.h"
+#include "comments-config.h"
 
 typedef gchar* (*BlockCommentFunc) (gchar        *selection, 
                                     const gchar  *start,
@@ -39,7 +39,7 @@ static void action_callback                      (CommentsEngine       *engine,
 static void comment_action                       (CommentsEngine       *engine);
 static void uncomment_action                     (CommentsEngine       *engine);
 
-static CommentsConfiguration* get_configuration  (CommentsEngine       *engine);
+static CommentsConfig* get_config  (CommentsEngine       *engine);
 
 static gchar* get_config_file_path               (CommentsEngine       *engine);
 
@@ -56,7 +56,7 @@ static gchar* insert_block_comment               (gchar                *selectio
 static gchar* remove_block_comment               (gchar                *selection, 
                                                   const gchar          *start,
                                                   const gchar          *end);
-static GList* get_configurations_deep_copy       (CommentsEngine       *engine);
+static GList* get_configs_deep_copy       (CommentsEngine       *engine);
 
 #define COMMENTS_ENGINE_GET_PRIVATE(obj) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), COMMENTS_ENGINE_TYPE, CommentsEnginePrivate))
@@ -67,7 +67,7 @@ struct _CommentsEnginePrivate
 {
   CodeSlayer *codeslayer;
   GtkWidget  *menu;
-  GList      *configurations;
+  GList      *configs;
 };
 
 G_DEFINE_TYPE (CommentsEngine, comments_engine, G_TYPE_OBJECT)
@@ -85,7 +85,7 @@ comments_engine_init (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
-  priv->configurations = NULL;
+  priv->configs = NULL;
 }
 
 static void
@@ -93,11 +93,11 @@ comments_engine_finalize (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
-  if (priv->configurations != NULL)
+  if (priv->configs != NULL)
     {
-      g_list_foreach (priv->configurations, (GFunc) g_object_unref, NULL);
-      g_list_free (priv->configurations);
-      priv->configurations = NULL;    
+      g_list_foreach (priv->configs, (GFunc) g_object_unref, NULL);
+      g_list_free (priv->configs);
+      priv->configs = NULL;    
     }
 
   G_OBJECT_CLASS (comments_engine_parent_class)->finalize (G_OBJECT(engine));
@@ -126,16 +126,16 @@ comments_engine_new (CodeSlayer *codeslayer,
 }
 
 void
-comments_engine_load_configurations (CommentsEngine *engine)
+comments_engine_load_configs (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
-  GList *configurations;
+  GList *configs;
   gchar *file_path;
 
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
   
   file_path = get_config_file_path (engine);
-  configurations = codeslayer_utils_get_gobjects (COMMENTS_CONFIGURATION_TYPE,
+  configs = codeslayer_utils_get_gobjects (COMMENTS_CONFIG_TYPE,
                                                   FALSE,
                                                   file_path, 
                                                   "comment",
@@ -143,7 +143,7 @@ comments_engine_load_configurations (CommentsEngine *engine)
                                                   "start", G_TYPE_STRING, 
                                                   "end", G_TYPE_STRING, 
                                                   NULL);
-  priv->configurations = configurations;
+  priv->configs = configs;
   g_free (file_path);
 }
 
@@ -157,7 +157,7 @@ comments_engine_open_dialog (CommentsEngine *engine)
 
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
 
-  copies = get_configurations_deep_copy (engine);
+  copies = get_configs_deep_copy (engine);
   dialog = comments_dialog_new (priv->codeslayer, &copies);
     
   response = gtk_dialog_run (GTK_DIALOG (dialog));
@@ -166,9 +166,9 @@ comments_engine_open_dialog (CommentsEngine *engine)
     {
       gchar *file_path;
       
-      g_list_foreach (priv->configurations, (GFunc) g_object_unref, NULL);
-      g_list_free (priv->configurations);      
-      priv->configurations = copies;
+      g_list_foreach (priv->configs, (GFunc) g_object_unref, NULL);
+      g_list_free (priv->configs);      
+      priv->configs = copies;
       
       file_path = get_config_file_path (engine);
       
@@ -209,7 +209,7 @@ get_config_file_path (CommentsEngine *engine)
 }
 
 static GList*
-get_configurations_deep_copy (CommentsEngine *engine)
+get_configs_deep_copy (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
   GList *results = NULL;
@@ -217,24 +217,24 @@ get_configurations_deep_copy (CommentsEngine *engine)
 
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
   
-  list = priv->configurations;
+  list = priv->configs;
 
   while (list != NULL)
     {
-      CommentsConfiguration *configuration = list->data;
-      CommentsConfiguration *copy;
+      CommentsConfig *config = list->data;
+      CommentsConfig *copy;
       const gchar *file_types;
       const gchar *start;
       const gchar *end;
 
-      file_types = comments_configuration_get_file_types (configuration);
-      start = comments_configuration_get_start (configuration);
-      end = comments_configuration_get_end (configuration);
+      file_types = comments_config_get_file_types (config);
+      start = comments_config_get_start (config);
+      end = comments_config_get_end (config);
       
-      copy = comments_configuration_new ();
-      comments_configuration_set_file_types (copy, file_types);
-      comments_configuration_set_start (copy, start);
-      comments_configuration_set_end (copy, end);
+      copy = comments_config_new ();
+      comments_config_set_file_types (copy, file_types);
+      comments_config_set_start (copy, start);
+      comments_config_set_end (copy, end);
       results = g_list_prepend (results, copy);
       
       list = g_list_next (list);
@@ -256,7 +256,7 @@ uncomment_action (CommentsEngine *engine)
 }
 
 static void 
-action_callback (CommentsEngine    *engine, 
+action_callback (CommentsEngine   *engine, 
                  BlockCommentFunc  blockCommentFunc, 
                  LineCommentFunc   lineCommentFunc)
 {
@@ -288,16 +288,16 @@ action_callback (CommentsEngine    *engine,
 
   if (codeslayer_utils_has_text (selection))
     {
-      CommentsConfiguration *configuration;
-      configuration = get_configuration (engine);
-      if (configuration != NULL)
+      CommentsConfig *config;
+      config = get_config (engine);
+      if (config != NULL)
         {
           gchar *replace = NULL;
           const gchar *start;
           const gchar *end;
           
-          start = comments_configuration_get_start (configuration);
-          end = comments_configuration_get_end (configuration);
+          start = comments_config_get_start (config);
+          end = comments_config_get_end (config);
 
           if (match_block_comment (start, end))
             {
@@ -324,8 +324,8 @@ action_callback (CommentsEngine    *engine,
     g_free (selection);
 }
 
-static CommentsConfiguration*
-get_configuration (CommentsEngine *engine)
+static CommentsConfig*
+get_config (CommentsEngine *engine)
 {
   CommentsEnginePrivate *priv;
   CodeSlayerDocument *document;
@@ -337,14 +337,14 @@ get_configuration (CommentsEngine *engine)
   document = codeslayer_get_active_editor_document (priv->codeslayer);
   file_path = codeslayer_document_get_file_path (document);
   
-  list = priv->configurations;
+  list = priv->configs;
   while (list != NULL)
     {
-      CommentsConfiguration *configuration = list->data;
+      CommentsConfig *config = list->data;
       const gchar *file_types;
       GList *elements;
       
-      file_types = comments_configuration_get_file_types (configuration);
+      file_types = comments_config_get_file_types (config);
       
       elements = codeslayer_utils_string_to_list (file_types);
       
@@ -352,7 +352,7 @@ get_configuration (CommentsEngine *engine)
         {
           g_list_foreach (elements, (GFunc) g_free, NULL);
           g_list_free (elements);
-          return configuration;
+          return config;
         }
 
       g_list_foreach (elements, (GFunc) g_free, NULL);

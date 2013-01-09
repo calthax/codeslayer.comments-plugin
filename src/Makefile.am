@@ -7,8 +7,8 @@ libcommentscodeslayerplugin_la_SOURCES = \
     comments-engine.c \
     comments-dialog.h \
     comments-dialog.c \
-    comments-configuration.h \
-    comments-configuration.c \
+    comments-config.h \
+    comments-config.c \
     comments-plugin.c
 
 libcommentscodeslayerplugin_la_CPPFLAGS = $(COMMENTSCODESLAYERPLUGIN_CFLAGS) -I$(top_srcdir) -I$(srcdir)

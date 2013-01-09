@@ -45,12 +45,12 @@ struct _CommentsEngineClass
 
 GType comments_engine_get_type (void) G_GNUC_CONST;
 
-CommentsEngine*  comments_engine_new                  (CodeSlayer *codeslayer,
-                                                       GtkWidget  *menu);
+CommentsEngine*  comments_engine_new           (CodeSlayer     *codeslayer,
+                                                GtkWidget      *menu);
                                         
-void             comments_engine_load_configurations  (CommentsEngine *engine);
+void             comments_engine_load_configs  (CommentsEngine *engine);
 
-void             comments_engine_open_dialog          (CommentsEngine *engine);
+void             comments_engine_open_dialog   (CommentsEngine *engine);
 
 G_END_DECLS
 
