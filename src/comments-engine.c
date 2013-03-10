@@ -172,8 +172,6 @@ comments_engine_open_dialog (CommentsEngine *engine)
       
       file_path = get_config_file_path (engine);
       
-      g_print ("file_path %s \n", file_path);
-      
       codeslayer_utils_save_gobjects (copies,
                                       file_path, 
                                       "comment",

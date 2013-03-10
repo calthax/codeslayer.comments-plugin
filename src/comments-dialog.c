@@ -399,6 +399,8 @@ tree_edited_action (CommentsDialog *dialog,
       else
         {
           config = comments_config_new ();
+          comments_config_set_start (config, "");
+          comments_config_set_end (config, "");
 
           comments_config_set_file_types (config, file_types);
           
@@ -439,12 +441,12 @@ select_row_action (GtkTreeSelection *selection,
           start = comments_config_get_start (config);
           end = comments_config_get_end (config);
                         
-          if (start)              
+          if (codeslayer_utils_has_text (start))              
             gtk_entry_set_text (GTK_ENTRY (priv->start_entry), start);
           else
             gtk_entry_set_text (GTK_ENTRY (priv->start_entry), "");
 
-          if (end)              
+          if (codeslayer_utils_has_text (end))              
             gtk_entry_set_text (GTK_ENTRY (priv->end_entry), end);
           else
             gtk_entry_set_text (GTK_ENTRY (priv->end_entry), "");
