@@ -359,8 +359,11 @@ tree_remove_action (CommentsDialog *dialog)
       gtk_tree_model_get (GTK_TREE_MODEL (model), &iter, 
                           CONFIGURATION, &config, -1);
       
-      *priv->configs = g_list_remove (*priv->configs, config);
-      g_object_unref (config);
+      if (config != NULL)
+        {
+          *priv->configs = g_list_remove (*priv->configs, config);
+          g_object_unref (config);
+        }
 
       gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
     }
