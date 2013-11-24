@@ -259,7 +259,8 @@ action_callback (CommentsEngine   *engine,
                  LineCommentFunc   lineCommentFunc)
 {
   CommentsEnginePrivate *priv;
-  CodeSlayerEditor *editor;
+  CodeSlayerDocument *document;
+  GtkSourceView *source_view;
   GtkTextBuffer *buffer;
   GtkTextMark *insert_mark;
   GtkTextMark *selection_mark;
@@ -268,12 +269,13 @@ action_callback (CommentsEngine   *engine,
   
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
 
-  editor = codeslayer_get_active_editor (priv->codeslayer);
+  document = codeslayer_get_active_document (priv->codeslayer);
   
-  if (editor == NULL)
+  if (document == NULL)
     return;
 
-  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (editor));
+  source_view = codeslayer_document_get_source_view (document);
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (source_view));
 
   insert_mark = gtk_text_buffer_get_insert (buffer);
   selection_mark = gtk_text_buffer_get_selection_bound (buffer);
@@ -332,7 +334,7 @@ get_config (CommentsEngine *engine)
 
   priv = COMMENTS_ENGINE_GET_PRIVATE (engine);
   
-  document = codeslayer_get_active_editor_document (priv->codeslayer);
+  document = codeslayer_get_active_document (priv->codeslayer);
   file_path = codeslayer_document_get_file_path (document);
   
   list = priv->configs;
