@@ -98,13 +98,13 @@ add_menu_items (CommentsMenu  *menu,
   GtkWidget *comment_item;
   GtkWidget *uncomment_item;
 
-  comment_item = codeslayer_menu_item_new_with_label ("comment");
+  comment_item = codeslayer_menu_item_new_with_label ("Comment");
   gtk_widget_add_accelerator (comment_item, "activate", accel_group, 
                               GDK_KEY_slash, GDK_CONTROL_MASK, 
                               GTK_ACCEL_VISIBLE);  
   gtk_menu_shell_append (GTK_MENU_SHELL (submenu), comment_item);
 
-  uncomment_item = codeslayer_menu_item_new_with_label ("uncomment");
+  uncomment_item = codeslayer_menu_item_new_with_label ("Uncomment");
   gtk_widget_add_accelerator (uncomment_item, "activate", accel_group, 
                               GDK_KEY_backslash, GDK_CONTROL_MASK, 
                               GTK_ACCEL_VISIBLE);  
